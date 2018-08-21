@@ -1,8 +1,14 @@
 package monitor
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
+
+	// for pprof
+	_ "net/http/pprof"
 )
 
 const (
@@ -23,28 +29,36 @@ const (
 
 // Monitor struct
 type Monitor struct {
-	interval time.Duration
 	option   Option
+	interval time.Duration
+	httpPort int
 	callback func(stats map[Option]string)
 
-	stopChan chan interface{}
-	verbose  bool
+	httpServer *http.Server
+	stopChan   chan interface{}
+	verbose    bool
 }
 
 // Default returns a Monitor with default settings
 func Default(callback func(stats map[Option]string)) *Monitor {
-	return New(DefaultMonitorOption, DefaultMonitorInterval, callback)
+	return New(DefaultMonitorOption, DefaultMonitorInterval, 0, callback)
 }
 
 // New generates a Monitor with given settings
-func New(option Option, interval time.Duration, callback func(stats map[Option]string)) *Monitor {
+func New(option Option, interval time.Duration, port int, callback func(stats map[Option]string)) *Monitor {
 	return &Monitor{
 		interval: interval,
 		option:   option,
+		httpPort: port,
 		callback: callback,
 		stopChan: make(chan interface{}),
 		verbose:  false,
 	}
+}
+
+// SetOption sets the option
+func (m *Monitor) SetOption(option Option) {
+	m.option = option
 }
 
 // SetInterval sets the interval
@@ -52,9 +66,9 @@ func (m *Monitor) SetInterval(interval time.Duration) {
 	m.interval = interval
 }
 
-// SetOption sets the option
-func (m *Monitor) SetOption(option Option) {
-	m.option = option
+// SetHTTPPort sets the HTTP port
+func (m *Monitor) SetHTTPPort(port int) {
+	m.httpPort = port
 }
 
 // SetVerbose sets verbose flag
@@ -82,11 +96,35 @@ func (m *Monitor) Begin() {
 			}
 		}
 	}()
+
+	if m.httpPort > 0 {
+		go func() {
+			addr := fmt.Sprintf(":%d", m.httpPort)
+			m.httpServer = &http.Server{Addr: addr}
+
+			// begin http server
+			m.verboseLog(fmt.Sprintf("Start HTTP server... (http://localhost%s/debug/pprof)", addr))
+
+			if err := m.httpServer.ListenAndServe(); err != nil {
+				m.verboseLog(fmt.Sprintf("HTTP server stopping... (%s)", err))
+
+				m.httpServer = nil
+			}
+		}()
+	}
 }
 
 // Stop finishes monitoring
 func (m *Monitor) Stop() {
+	// stop monitoring
+	m.verboseLog("Stop monitoring...")
 	m.stopChan <- struct{}{}
+
+	if m.httpPort > 0 && m.httpServer != nil {
+		// stop http server
+		m.verboseLog("Stop HTTP server...")
+		m.httpServer.Shutdown(context.Background())
+	}
 }
 
 // CurrentStat fetches current stat
