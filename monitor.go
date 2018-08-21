@@ -100,7 +100,12 @@ func (m *Monitor) Begin() {
 	if m.httpPort > 0 {
 		go func() {
 			addr := fmt.Sprintf(":%d", m.httpPort)
-			m.httpServer = &http.Server{Addr: addr}
+			m.httpServer = &http.Server{
+				Addr:         addr,
+				WriteTimeout: 10 * time.Second,
+				ReadTimeout:  10 * time.Second,
+				IdleTimeout:  60 * time.Second,
+			}
 
 			// begin http server
 			m.verboseLog(fmt.Sprintf("Start HTTP server... (http://localhost%s/debug/pprof)", addr))
