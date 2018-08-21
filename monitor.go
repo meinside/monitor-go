@@ -89,6 +89,11 @@ func (m *Monitor) Stop() {
 	m.stopChan <- struct{}{}
 }
 
+// CurrentStat fetches current stat
+func (m *Monitor) CurrentStat() map[Option]string {
+	return m.stat()
+}
+
 // print verbose log message
 func (m *Monitor) verboseLog(str string) {
 	if m.verbose {
