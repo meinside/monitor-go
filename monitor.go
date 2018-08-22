@@ -11,20 +11,17 @@ import (
 	_ "net/http/pprof"
 )
 
-const (
-	// DefaultMonitorInterval is the default interval seconds for monitoring
-	DefaultMonitorInterval = 10 * time.Second
-)
-
 // Option is a type for setting monitoring options
 type Option int
 
 // Monitoring options
 const (
-	DefaultMonitorOption Option = MonitorGoroutines | MonitorMemory
-
 	MonitorGoroutines Option = 1
 	MonitorMemory     Option = 1 << 1
+
+	DefaultMonitorInterval = 10 * time.Second
+
+	DefaultMonitorOption Option = MonitorGoroutines | MonitorMemory
 )
 
 // Monitor struct
@@ -101,14 +98,15 @@ func (m *Monitor) Begin() {
 		go func() {
 			addr := fmt.Sprintf(":%d", m.httpPort)
 			m.httpServer = &http.Server{
-				Addr:         addr,
-				WriteTimeout: 10 * time.Second,
-				ReadTimeout:  10 * time.Second,
-				IdleTimeout:  60 * time.Second,
+				Addr:              addr,
+				WriteTimeout:      10 * time.Second,
+				ReadTimeout:       10 * time.Second,
+				ReadHeaderTimeout: 10 * time.Second,
+				IdleTimeout:       60 * time.Second,
 			}
 
 			// begin http server
-			m.verboseLog(fmt.Sprintf("Start HTTP server... (http://localhost%s/debug/pprof)", addr))
+			m.verboseLog(fmt.Sprintf("Start HTTP server... (http://HOST_NAME%s/debug/pprof)", addr))
 
 			if err := m.httpServer.ListenAndServe(); err != nil {
 				m.verboseLog(fmt.Sprintf("HTTP server stopping... (%s)", err))
