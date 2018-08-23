@@ -1,22 +1,23 @@
 # monitor-go
 
-A go library for monitoring application's stats periodically.
+A go library for monitoring application's stats (periodically).
 
-## supported stats
+## Supported stats and functionalities
 
 - [X] Memory usage
 - [X] Number of goroutines
+- [X] pprof monitoring through http server
 - [ ] ?
 
-## how to get
+## How to get
 
 ```bash
 $ go get -u github.com/meinside/monitor-go
 ```
 
-## usage
+## Usages
 
-### example
+### Example
 
 ```go
 package main
@@ -66,6 +67,24 @@ func main() {
 	fmt.Println("> monitor finished.")
 }
 ```
+
+### Easy pprof monitoring
+
+Run your code with `github.com/meinside/monitor-go/pprof` package imported as side-effect:
+
+```go
+package main
+
+import (
+	_ "github.com/meinside/monitor-go/pprof"
+)
+
+func main() {
+	// ... do your business here
+}
+```
+
+then visit `http://HOST_NAME:61000/debug/pprof/` for pprof stats.
 
 ## license
 

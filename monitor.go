@@ -104,22 +104,24 @@ func (m *Monitor) SetVerbose(verbose bool) {
 func (m *Monitor) Begin() {
 	timer := time.NewTicker(m.interval)
 
-	go func() {
-		// begin monitoring
-		m.verboseLog("Start monitoring...")
+	if m.callback != nil {
+		go func() {
+			// begin monitoring
+			m.verboseLog("Start monitoring...")
 
-		for {
-			select {
-			case <-timer.C:
-				// time interval
-				m.callback(m.stat())
-			case <-m.stopChan:
-				// stop monitoring
-				m.verboseLog("Received from stop channel, stopping...")
-				break
+			for {
+				select {
+				case <-timer.C:
+					// time interval
+					m.callback(m.stat())
+				case <-m.stopChan:
+					// stop monitoring
+					m.verboseLog("Received from stop channel, stopping...")
+					break
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	if m.httpPort > 0 {
 		go func() {
@@ -147,11 +149,13 @@ func (m *Monitor) Begin() {
 // Stop finishes monitoring.
 func (m *Monitor) Stop() {
 	// stop monitoring
-	m.verboseLog("Stop monitoring...")
-	m.stopChan <- struct{}{}
+	if m.callback != nil {
+		m.verboseLog("Stop monitoring...")
+		m.stopChan <- struct{}{}
+	}
 
+	// stop http server
 	if m.httpPort > 0 && m.httpServer != nil {
-		// stop http server
 		m.verboseLog("Stop HTTP server...")
 		m.httpServer.Shutdown(context.Background())
 	}
