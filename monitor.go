@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"time"
-
-	// for pprof
-	_ "net/http/pprof"
 )
 
 // Option is a type for setting monitoring options
@@ -126,12 +124,22 @@ func (m *Monitor) Begin() {
 	if m.httpPort > 0 {
 		go func() {
 			addr := fmt.Sprintf(":%d", m.httpPort)
+
+			// additional pprof handlers
+			mux := http.NewServeMux()
+			mux.HandleFunc("/debug/pprof/", pprof.Index)
+			mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 			m.httpServer = &http.Server{
 				Addr:              addr,
-				WriteTimeout:      10 * time.Second,
+				Handler:           mux,
+				WriteTimeout:      40 * time.Second,
 				ReadTimeout:       10 * time.Second,
 				ReadHeaderTimeout: 10 * time.Second,
-				IdleTimeout:       60 * time.Second,
+				IdleTimeout:       300 * time.Second,
 			}
 
 			// begin http server
