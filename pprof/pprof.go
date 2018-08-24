@@ -1,9 +1,6 @@
 package pprof
 
-// Import this package as side-effect
-// (import _ "github.com/meinside/monitor-go/pprof")
-//
-// for running pprof server locally.
+// Import this package for running pprof server locally.
 
 import (
 	"time"
