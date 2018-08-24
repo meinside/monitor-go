@@ -136,7 +136,7 @@ func (m *Monitor) Begin() {
 			m.httpServer = &http.Server{
 				Addr:              addr,
 				Handler:           mux,
-				WriteTimeout:      40 * time.Second,
+				WriteTimeout:      120 * time.Second,
 				ReadTimeout:       10 * time.Second,
 				ReadHeaderTimeout: 10 * time.Second,
 				IdleTimeout:       300 * time.Second,
