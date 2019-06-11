@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"time"
 )
 
@@ -25,6 +26,8 @@ const (
 	// default monitoring interval seconds
 	DefaultMonitorInterval = 10 * time.Second
 )
+
+var _stdout = log.New(os.Stdout, "", log.LstdFlags)
 
 // return string value of given Option
 func (o Option) String() string {
@@ -105,7 +108,7 @@ func (m *Monitor) Begin() {
 	if m.callback != nil {
 		go func() {
 			// begin monitoring
-			m.verboseLog("Start monitoring...")
+			m.verboseLog("start monitoring...")
 
 			for {
 				select {
@@ -114,7 +117,7 @@ func (m *Monitor) Begin() {
 					m.callback(m.stat())
 				case <-m.stopChan:
 					// stop monitoring
-					m.verboseLog("Received from stop channel, stopping...")
+					m.verboseLog("received from stop channel, stopping...")
 					break
 				}
 			}
@@ -143,10 +146,10 @@ func (m *Monitor) Begin() {
 			}
 
 			// begin http server
-			m.verboseLog(fmt.Sprintf("Start pprof HTTP server... (http://HOST_NAME%s/debug/pprof)", addr))
+			m.verboseLog("start pprof http server on http://localhost%s/debug/pprof", addr)
 
 			if err := m.httpServer.ListenAndServe(); err != nil {
-				m.verboseLog(fmt.Sprintf("pprof HTTP server stopping... (%s)", err))
+				m.verboseLog("pprof http server stopped: %s", err)
 
 				m.httpServer = nil
 			}
@@ -158,13 +161,15 @@ func (m *Monitor) Begin() {
 func (m *Monitor) Stop() {
 	// stop monitoring
 	if m.callback != nil {
-		m.verboseLog("Stop monitoring...")
+		m.verboseLog("stopping monitoring...")
+
 		m.stopChan <- struct{}{}
 	}
 
 	// stop http server
 	if m.httpPort > 0 && m.httpServer != nil {
-		m.verboseLog("Stop HTTP server...")
+		m.verboseLog("stopping pprof http server...")
+
 		m.httpServer.Shutdown(context.Background())
 	}
 }
@@ -175,8 +180,8 @@ func (m *Monitor) CurrentStat() map[Option]string {
 }
 
 // print verbose log message
-func (m *Monitor) verboseLog(str string) {
+func (m *Monitor) verboseLog(format string, args ...interface{}) {
 	if m.verbose {
-		log.Printf("[monitor] %s", str)
+		_stdout.Printf(format, args...)
 	}
 }
